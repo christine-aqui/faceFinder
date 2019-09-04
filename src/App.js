@@ -38,8 +38,27 @@ class App extends Component {
 		this.state = {
 			input: '',
 			imageUrl: 'https://cdn.onlinewebfonts.com/svg/img_94880.png',
+			box: {},
 		};
 	}
+
+	calculateFaceLocation = data => {
+		const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
+		const image = document.getElementById('inputImage');
+		const width = Number(image.width);
+		const height = Number(image.height);
+		return {
+			leftCol: clarifaiFace.left_col * width,
+			topRow: clarifaiFace.top_row * height,
+			rightCol: width - (clarifaiFace.right_col * width),
+			bottomRow: height - (clarifaiFace.bottom_row * height),
+		};
+	};
+
+	displayFaceBox = box => {
+		console.log('box obj ', box)
+		this.setState({ box: box });
+	};
 
 	onInputChange = event => {
 		this.setState({ input: event.target.value });
@@ -48,14 +67,9 @@ class App extends Component {
 	onButtonSubmit = event => {
 		this.setState({ imageUrl: this.state.input });
 
-		app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input).then(
-			function(response) {
-				console.log('response ', response.outputs[0].data.regions[0].region_info.bounding_box);
-			},
-			function(err) {
-				console.log('err ', err);
-			},
-		);
+		app.models.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
+		.then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+		.catch(err => console.log(err))
 	};
 
 	render() {
@@ -68,7 +82,7 @@ class App extends Component {
       */}
 				<Rank />
 				<ImageLinkForm onInputChange={this.onInputChange} onButtonSubmit={this.onButtonSubmit} />
-				<FaceRecognition imageUrl={this.state.imageUrl} />
+				<FaceRecognition imageUrl={this.state.imageUrl} box={this.state.box} />
 			</div>
 		);
 	}
