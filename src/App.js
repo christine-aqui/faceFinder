@@ -34,25 +34,41 @@ const particlesOptions = {
 	},
 };
 
+const initialState = {
+	input: '',
+	imageUrl: '',
+	box: {},
+	route: 'signin',
+	isSignedIn: false,
+	user: {
+		id: '',
+		name: '',
+		email: '',
+		entries: 0,
+		joined: '',
+	},
+};
+
 class App extends Component {
 	constructor() {
 		super();
-		this.state = {
-			input: '',
-			imageUrl: '',
-			box: {},
-			route: 'signin',
-			isSignedIn: false,
-		};
-	}
+		this.state = initialState;
+	};
 
-	// componentDidMount() {
-	// 	fetch('http://localhost:3000')
-	// 	.then(res => res.json())
-	// 	.then(console.log)
-	// }
+	loadUser = data => {
+		this.setState({
+			user: {
+				id: data.id,
+				name: data.name,
+				email: data.email,
+				entries: data.entries,
+				joined: data.joined,
+			},
+		});
+	};
 
 	calculateFaceLocation = data => {
+		console.log('calculateFaceLocation');
 		const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
 		const image = document.getElementById('inputImage');
 		const width = Number(image.width);
@@ -73,12 +89,31 @@ class App extends Component {
 		this.setState({ input: event.target.value });
 	};
 
-	onButtonSubmit = event => {
+	onPictureSubmit = event => {
 		this.setState({ imageUrl: this.state.input });
+		console.log('onPictureSubmit');
 
 		app.models
 			.predict(Clarifai.FACE_DETECT_MODEL, this.state.input)
-			.then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+			// .then(response => response.json())
+			.then(response => {
+				if (response) {
+					fetch('http://localhost:3000/image', {
+						method: 'put',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							id: this.state.user.id,
+						}),
+					})
+						.then(response => response.json())
+						.then(count => {
+							console.log('count ', count);
+							this.setState(Object.assign(this.state.user, { entries: count }));
+						})
+						.catch(console.log);
+				}
+				this.displayFaceBox(this.calculateFaceLocation(response));
+			})
 			.catch(err => console.log(err));
 	};
 
@@ -104,17 +139,17 @@ class App extends Component {
 				{route === 'home' ? (
 					<div>
 						<Logo />
-						<Rank />
+						<Rank name={this.state.user.name} entries={this.state.user.entries} />
 						<ImageLinkForm
 							onInputChange={this.onInputChange}
-							onButtonSubmit={this.onButtonSubmit}
+							onPictureSubmit={this.onPictureSubmit}
 						/>
 						<FaceRecognition imageUrl={imageUrl} box={box} />
 					</div>
 				) : route === 'signin' ? (
-					<Signin onRouteChange={this.onRouteChange} />
+					<Signin loadUser={this.loadUser} onRouteChange={this.onRouteChange} />
 				) : (
-					<Registration onRouteChange={this.onRouteChange} />
+					<Registration onRouteChange={this.onRouteChange} loadUser={this.loadUser} />
 				)}
 			</div>
 		);

@@ -6,3 +6,7 @@
   justify-content: center;
   cursor: pointer;
 }
+
+#face-image {
+  align-items: unset;
+}

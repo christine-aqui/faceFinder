@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { Component  } from 'react';
 // import './Signin.css';
 
-class Signin extends React.Component {
+class Signin extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -28,10 +28,11 @@ class Signin extends React.Component {
 			})
 		})
 		.then(res => res.json())
-		.then(data => {
-			if(data === 'success'){
-				this.props.onRouteChange('home');
-			}
+		.then(user => {
+        if (user.id) {
+					this.props.loadUser(user);
+					this.props.onRouteChange('home');
+				}
 		})
 	};
 
